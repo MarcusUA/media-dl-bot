@@ -1,30 +1,76 @@
 import os
 import requests
 import telebot
+from functools import wraps
 
+# configuration
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
+print (f"BOT_TOKEN: {BOT_TOKEN}")
 YTDL_URL = os.environ.get('YTDL_URL')
+print (f"YTDL_URL: {YTDL_URL}")
+USERS = os.environ.get('USERS')
+if USERS:
+    ALLOWED_USERS=USERS.split(",")
 
-bot = telebot.TeleBot(BOT_TOKEN)
 
+# functions
 
-@bot.message_handler(commands=['start', 'help'])
-def send_welcome(message):
-	bot.reply_to(message, f"Your UserID: {message.from_user.username}")
+def is_allowed_username(username):
+    if not USERS:
+         return True
+    return username in ALLOWED_USERS
 
-@bot.message_handler(regexp='https://.+')
-def handle_message(message):
+def verify_access():
+    def handler_restict(f):
+        @wraps(f)
+        def f_restrict(message, *args, **kwargs):
+            username=message.from_user.username
+            if is_allowed_username(username):
+                return f(message, *args, **kwargs)
+            else:
+                print (f"Unknown user: {username}")
+                bot.reply_to(message, f"Unregistered username: {username}")
+        return f_restrict
+    return handler_restict
+
+def request_dl(url):
     try:
-        url = message.text
         data = {
             "url": f"{url}", 
             "format": "bestvideo"
         }
         response = requests.post(YTDL_URL, data=data)
-        print(response.status_code)
+        print(f"requesting: {YTDL_URL}, data={data}")
         print(response.content)
-        bot.reply_to(message, "Successfully added to the download queue")
+        return True
     except:
-        bot.reply_to(message, "Couldn't add to the download queue, error occured :(")
+        return False
+
+
+
+bot = telebot.TeleBot(BOT_TOKEN)
+
+# Commands
+
+@bot.message_handler(commands=['start'])
+@verify_access()
+def send_welcome(message):
+	bot.reply_to(message, f"Welcome {message.from_user.username}. Send me a Video URL to iniate download.")
+
+@bot.message_handler(commands=['help'])
+@verify_access()
+def send_help(message):
+	bot.reply_to(message, "Send me a Video URL to iniate download.")
+
+# Messages
+@bot.message_handler(regexp='https://.+')
+@verify_access()
+def handle_message(message):
+        url = message.text
+        if request_dl(url):
+            bot.reply_to(message, "Successfully added to the download queue")
+        else:
+            bot.reply_to(message, "Couldn't add to the download queue, error occured :(")
+
 
 bot.infinity_polling()
