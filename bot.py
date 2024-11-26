@@ -15,6 +15,12 @@ print (f"YTDL_URL: {YTDL_URL}")
 USERS = os.environ.get('USERS')
 if USERS:
     ALLOWED_USERS=USERS.split(",")
+UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER')
+if UPLOAD_FOLDER:
+     print (f"UPLOAD_FOLDER: {UPLOAD_FOLDER}")
+     if not os.path.exists(UPLOAD_FOLDER):
+        print (f"Folder doesn't exist trying to create.")
+        os.makedirs(UPLOAD_FOLDER)
 
 
 # functions
@@ -37,6 +43,9 @@ def verify_access():
         return f_restrict
     return handler_restict
 
+def extract_arg(arg):
+    return arg.split()[1:]
+
 def request_dl(url, format="best"):
     try:
         data = {
@@ -50,6 +59,12 @@ def request_dl(url, format="best"):
     except:
         return False
 
+def get_files_in_folder(dir):
+    try:
+        files = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir, f))]
+        return files
+    except:
+        return "Couldn't retrieve file list"
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -68,7 +83,25 @@ def send_help(message):
         Awailable commands:
         /start
         /help
+        /ls_dl - list downloaded files.
+        /up <filename> - upload a file.
     """)
+
+
+@bot.message_handler(commands=['ls_dl'])
+@verify_access()
+def list_files(message):
+    files = get_files_in_folder(UPLOAD_FOLDER)
+    bot.reply_to(message, '\n'.join(files))
+
+
+@bot.message_handler(commands=['up'])
+@verify_access()
+def list_files(message):
+    args = extract_arg(message.text)
+    for f in args:
+        file = open(os.path.join(UPLOAD_FOLDER, f), 'rb')
+        bot.send_document(message.chat.id, file)
 
 
 # Messages
