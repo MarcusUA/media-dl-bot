@@ -85,6 +85,7 @@ def send_help(message):
         /help
         /ls_dl - list downloaded files.
         /up <filename> - upload a file.
+        /vid_up <filename> - upload a video.
     """)
 
 
@@ -102,6 +103,19 @@ def list_files(message):
     for f in args:
         file = open(os.path.join(UPLOAD_FOLDER, f), 'rb')
         bot.send_document(message.chat.id, file)
+
+
+@bot.message_handler(commands=['vid_up'])
+@verify_access()
+def list_files(message):
+    args = extract_arg(message.text)
+    vid_media = []
+    for f in args:
+        with open(os.path.join(UPLOAD_FOLDER, f), 'rb') as fh:
+            vid_data = fh.read()
+            media = telebot.types.InputMediaVideo(vid_data)
+            vid_media.append(media)
+    bot.send_media_group(message.chat.id, vid_media)
 
 
 # Messages
