@@ -37,11 +37,11 @@ def verify_access():
         return f_restrict
     return handler_restict
 
-def request_dl(url):
+def request_dl(url, format="best"):
     try:
         data = {
             "url": f"{url}", 
-            "format": "best"
+            "format": format
         }
         response = requests.post(YTDL_URL, data=data)
         print(f"requesting: {YTDL_URL}, data={data}")
