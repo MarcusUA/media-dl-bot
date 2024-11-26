@@ -41,7 +41,7 @@ def request_dl(url):
     try:
         data = {
             "url": f"{url}", 
-            "format": "bestvideo"
+            "format": "best"
         }
         response = requests.post(YTDL_URL, data=data)
         print(f"requesting: {YTDL_URL}, data={data}")
@@ -59,12 +59,17 @@ bot = telebot.TeleBot(BOT_TOKEN)
 @bot.message_handler(commands=['start'])
 @verify_access()
 def send_welcome(message):
-	bot.reply_to(message, f"Welcome {message.from_user.username}. Send me a Video URL to iniate download.")
+    bot.reply_to(message, f"Welcome {message.from_user.username}.\nSend me a Video URL to iniate download.\nSend /help for more info.")
 
 @bot.message_handler(commands=['help'])
 @verify_access()
 def send_help(message):
-	bot.reply_to(message, "Send me a Video URL to iniate download.")
+    bot.reply_to(message, """Send me a Video URL to iniate download.
+        Awailable commands:
+        /start
+        /help
+    """)
+
 
 # Messages
 @bot.message_handler(regexp='https://.+')
