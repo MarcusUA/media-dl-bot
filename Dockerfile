@@ -1,8 +1,8 @@
-FROM python:3.9
+FROM python:3
 
 ADD bot.py .
 
-RUN pip install pyTelegramBotAPI requests
+RUN pip install pyTelegramBotAPI requests python-dotenv
 
 
 CMD ["./bot.py"]

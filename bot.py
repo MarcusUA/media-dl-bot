@@ -2,8 +2,12 @@ import os
 import requests
 import telebot
 from functools import wraps
+from dotenv import load_dotenv
+
+
 
 # configuration
+load_dotenv()
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 print (f"BOT_TOKEN: {BOT_TOKEN}")
 YTDL_URL = os.environ.get('YTDL_URL')
