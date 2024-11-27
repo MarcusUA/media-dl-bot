@@ -64,7 +64,7 @@ def get_files_in_folder(dir):
         files = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir, f))]
         return files
     except:
-        return "Couldn't retrieve file list"
+        return ["Couldn't retrieve file list"]
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -80,7 +80,7 @@ def send_welcome(message):
 @verify_access()
 def send_help(message):
     bot.reply_to(message, """Send me a Video URL to iniate download.
-        Awailable commands:
+        Available commands:
         /start
         /help
         /ls_dl - list downloaded files.
@@ -98,24 +98,28 @@ def list_files(message):
 
 @bot.message_handler(commands=['up'])
 @verify_access()
-def list_files(message):
-    args = extract_arg(message.text)
-    for f in args:
-        file = open(os.path.join(UPLOAD_FOLDER, f), 'rb')
+def upload_file(message):
+    filename = " ".join(extract_arg(message.text))
+    if filename:
+        file = open(os.path.join(UPLOAD_FOLDER, filename), 'rb')
         bot.send_document(message.chat.id, file)
+    else:
+        bot.reply_to(message, "Please add a file name to upload")
 
 
 @bot.message_handler(commands=['vid_up'])
 @verify_access()
-def list_files(message):
-    args = extract_arg(message.text)
+def upload_video(message):
+    filename = " ".join(extract_arg(message.text))
     vid_media = []
-    for f in args:
-        with open(os.path.join(UPLOAD_FOLDER, f), 'rb') as fh:
+    if filename:
+        with open(os.path.join(UPLOAD_FOLDER, filename), 'rb') as fh:
             vid_data = fh.read()
             media = telebot.types.InputMediaVideo(vid_data)
             vid_media.append(media)
-    bot.send_media_group(message.chat.id, vid_media)
+        bot.send_media_group(message.chat.id, vid_media)
+    else:
+        bot.reply_to(message, "Please add a file name to upload")
 
 
 # Messages
