@@ -1,6 +1,7 @@
 import os
 import requests
 import telebot
+from telebot.types import BotCommand
 from functools import wraps
 from dotenv import load_dotenv
 
@@ -70,6 +71,10 @@ def get_files_in_folder(dir):
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # Commands
+MAIN_COMMANDS = [BotCommand(command='start', description='Start the Bot'),
+                 BotCommand(command='help', description='Click for Help'),
+                 BotCommand(command='ls_dl', description='List downloaded files')]
+bot.set_my_commands(MAIN_COMMANDS)
 
 @bot.message_handler(commands=['start'])
 @verify_access()
