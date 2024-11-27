@@ -1,7 +1,7 @@
 import os
 import requests
 import telebot
-from telebot.types import BotCommand
+from telebot.types import BotCommand, InputMediaVideo
 from functools import wraps
 from dotenv import load_dotenv
 
@@ -120,7 +120,7 @@ def upload_video(message):
     if filename:
         with open(os.path.join(UPLOAD_FOLDER, filename), 'rb') as fh:
             vid_data = fh.read()
-            media = telebot.types.InputMediaVideo(vid_data)
+            media = InputMediaVideo(vid_data)
             vid_media.append(media)
         bot.send_media_group(message.chat.id, vid_media)
     else:
