@@ -1,5 +1,5 @@
 import os
-import requests
+import yt_dlp
 import telebot
 from telebot.types import BotCommand, InputMediaVideo
 from functools import wraps
@@ -22,6 +22,9 @@ if UPLOAD_FOLDER:
      if not os.path.exists(UPLOAD_FOLDER):
         print (f"Folder doesn't exist trying to create.")
         os.makedirs(UPLOAD_FOLDER)
+FILENANE_TMPL = os.environ.get('FILENANE_TMPL')
+if not FILENANE_TMPL:
+    FILENANE_TMPL = '%(title)s [%(id)s].%(ext)s'
 
 
 # functions
@@ -47,33 +50,40 @@ def verify_access():
 def extract_arg(arg):
     return arg.split()[1:]
 
-def request_dl(url, format="best"):
-    try:
-        data = {
-            "url": f"{url}", 
-            "format": format
-        }
-        response = requests.post(YTDL_URL, data=data)
-        print(f"requesting: {YTDL_URL}, data={data}")
-        print(response.content)
-        return True
-    except:
-        return False
 
-def get_files_in_folder(dir):
-    try:
-        files = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir, f))]
-        return files
-    except:
-        return ["Couldn't retrieve file list"]
+def request_dl(message, url):
+    ydl_opts = {
+        'outtmpl': f'{UPLOAD_FOLDER}/{FILENANE_TMPL}'
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        try:
+            info = ydl.extract_info(url, download=False)
+            #print(json.dumps(ydl.sanitize_info(info)))
+            #video_title = info['title']
+            #video_url = info['url']
+            video_id = info['id']
+            video_ext = info['ext']
+            ydl.download([url])
+
+            
+            #bot.reply_to(message, "Successfully downloaded video, uploading...")
+            vid_media = []
+            with open(os.path.join(UPLOAD_FOLDER, f"{video_id}.{video_ext}"), 'rb') as fh:
+                vid_data = fh.read()
+                media = InputMediaVideo(vid_data)
+                vid_media.append(media)
+            bot.send_media_group(message.chat.id, vid_media)
+
+        except Exception as e:
+            print(f"Error downloading video: {e}")
+            bot.reply_to(message, text="Failed to download the video.")
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # Commands
 MAIN_COMMANDS = [BotCommand(command='start', description='Start the Bot'),
-                 BotCommand(command='help', description='Click for Help'),
-                 BotCommand(command='ls_dl', description='List downloaded files')]
+                 BotCommand(command='help', description='Click for Help')]
 bot.set_my_commands(MAIN_COMMANDS)
 
 @bot.message_handler(commands=['start'])
@@ -88,43 +98,7 @@ def send_help(message):
         Available commands:
         /start
         /help
-        /ls_dl - list downloaded files.
-        /up <filename> - upload a file.
-        /vid_up <filename> - upload a video.
     """)
-
-
-@bot.message_handler(commands=['ls_dl'])
-@verify_access()
-def list_files(message):
-    files = get_files_in_folder(UPLOAD_FOLDER)
-    bot.reply_to(message, '\n'.join(files))
-
-
-@bot.message_handler(commands=['up'])
-@verify_access()
-def upload_file(message):
-    filename = " ".join(extract_arg(message.text))
-    if filename:
-        file = open(os.path.join(UPLOAD_FOLDER, filename), 'rb')
-        bot.send_document(message.chat.id, file)
-    else:
-        bot.reply_to(message, "Please add a file name to upload")
-
-
-@bot.message_handler(commands=['vid_up'])
-@verify_access()
-def upload_video(message):
-    filename = " ".join(extract_arg(message.text))
-    vid_media = []
-    if filename:
-        with open(os.path.join(UPLOAD_FOLDER, filename), 'rb') as fh:
-            vid_data = fh.read()
-            media = InputMediaVideo(vid_data)
-            vid_media.append(media)
-        bot.send_media_group(message.chat.id, vid_media)
-    else:
-        bot.reply_to(message, "Please add a file name to upload")
 
 
 # Messages
@@ -132,10 +106,6 @@ def upload_video(message):
 @verify_access()
 def handle_message(message):
         url = message.text
-        if request_dl(url):
-            bot.reply_to(message, "Successfully added to the download queue")
-        else:
-            bot.reply_to(message, "Couldn't add to the download queue, error occured :(")
-
+        request_dl(message, url)
 
 bot.infinity_polling()
