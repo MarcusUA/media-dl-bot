@@ -1,4 +1,5 @@
 import os
+import glob
 import yt_dlp
 import telebot
 from telebot.types import BotCommand, InputMediaVideo
@@ -11,8 +12,6 @@ from dotenv import load_dotenv
 load_dotenv()
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 print (f"BOT_TOKEN: {BOT_TOKEN}")
-YTDL_URL = os.environ.get('YTDL_URL')
-print (f"YTDL_URL: {YTDL_URL}")
 USERS = os.environ.get('USERS')
 if USERS:
     ALLOWED_USERS=USERS.split(",")
@@ -24,7 +23,7 @@ if UPLOAD_FOLDER:
         os.makedirs(UPLOAD_FOLDER)
 FILENANE_TMPL = os.environ.get('FILENANE_TMPL')
 if not FILENANE_TMPL:
-    FILENANE_TMPL = '%(title)s [%(id)s].%(ext)s'
+    FILENANE_TMPL = '%(id)s %(title)s.%(ext)s'
 
 
 # functions
@@ -53,30 +52,37 @@ def extract_arg(arg):
 
 def request_dl(message, url):
     ydl_opts = {
+        'format': "bv*[vcodec*=avc1][height<=1080]+ba[acodec*=mp4a]/bv*[vcodec*=avc1]+ba/best",
         'outtmpl': f'{UPLOAD_FOLDER}/{FILENANE_TMPL}'
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        errorcode = -1
         try:
             info = ydl.extract_info(url, download=False)
             #print(json.dumps(ydl.sanitize_info(info)))
             #video_title = info['title']
             #video_url = info['url']
+            #print(info['formats'])
             video_id = info['id']
-            video_ext = info['ext']
-            ydl.download([url])
-
-            
+            #video_ext = info['ext']
+            errorcode = ydl.download([url])
             #bot.reply_to(message, "Successfully downloaded video, uploading...")
             vid_media = []
-            with open(os.path.join(UPLOAD_FOLDER, f"{video_id}.{video_ext}"), 'rb') as fh:
-                vid_data = fh.read()
-                media = InputMediaVideo(vid_data)
-                vid_media.append(media)
+            errorcode = -2
+            filepath_template = os.path.join(UPLOAD_FOLDER, f"{video_id}*")
+            for filepath in glob.glob(filepath_template):
+                with open(filepath, 'rb') as fh:
+                    errorcode = -3
+                    vid_data = fh.read()
+                    media = InputMediaVideo(vid_data)
+                    errorcode = -4
+                    vid_media.append(media)
             bot.send_media_group(message.chat.id, vid_media)
 
         except Exception as e:
+            print(f"Error Code downloading video: {errorcode}")
             print(f"Error downloading video: {e}")
-            bot.reply_to(message, text="Failed to download the video.")
+            bot.reply_to(message, text=f"Failed to download the video. ErrorCode: {errorcode}")
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
