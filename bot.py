@@ -24,6 +24,7 @@ if UPLOAD_FOLDER:
 FILENANE_TMPL = os.environ.get('FILENANE_TMPL')
 if not FILENANE_TMPL:
     FILENANE_TMPL = '%(id)s %(title)s.%(ext)s'
+NO_UPLOAD = os.environ.get('NO_UPLOAD')
 
 
 # functions
@@ -66,18 +67,22 @@ def request_dl(message, url):
             video_id = info['id']
             #video_ext = info['ext']
             errorcode = ydl.download([url])
-            #bot.reply_to(message, "Successfully downloaded video, uploading...")
-            vid_media = []
-            errorcode = -2
-            filepath_template = os.path.join(UPLOAD_FOLDER, f"{video_id}*")
-            for filepath in glob.glob(filepath_template):
-                with open(filepath, 'rb') as fh:
-                    errorcode = -3
-                    vid_data = fh.read()
-                    media = InputMediaVideo(vid_data)
-                    errorcode = -4
-                    vid_media.append(media)
-            bot.send_media_group(message.chat.id, vid_media)
+
+            if NO_UPLOAD:
+                bot.reply_to(message, text="Video downloaded successfully.")
+            else:
+                #bot.reply_to(message, "Successfully downloaded video, uploading...")
+                vid_media = []
+                #errorcode = -2
+                filepath_template = os.path.join(UPLOAD_FOLDER, f"{video_id}*")
+                for filepath in glob.glob(filepath_template):
+                    with open(filepath, 'rb') as fh:
+                        errorcode = -3
+                        vid_data = fh.read()
+                        media = InputMediaVideo(vid_data)
+                        errorcode = -4
+                        vid_media.append(media)
+                bot.send_media_group(message.chat.id, vid_media)
 
         except Exception as e:
             print(f"Error Code downloading video: {errorcode}")
