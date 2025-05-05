@@ -113,7 +113,7 @@ def send_help(message):
 
 
 # Messages
-@bot.message_handler(regexp='https://.+')
+@bot.message_handler(regexp='^https://.+')
 @verify_access()
 def handle_message(message):
         url = message.text
