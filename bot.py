@@ -25,7 +25,11 @@ FILENANE_TMPL = os.environ.get('FILENANE_TMPL')
 if not FILENANE_TMPL:
     FILENANE_TMPL = '%(id)s %(title)s.%(ext)s'
 NO_UPLOAD = os.environ.get('NO_UPLOAD')
+URL_EXCEPTIONS = os.environ.get('URL_EXCEPTIONS')
+if not URL_EXCEPTIONS:
+    URL_EXCEPTIONS = 'olx.|mobile.de'
 
+url_check_pattern = f"\Ahttps://(?!.*({URL_EXCEPTIONS}))"
 
 # functions
 
@@ -113,7 +117,7 @@ def send_help(message):
 
 
 # Messages
-@bot.message_handler(regexp='^https://.+')
+@bot.message_handler(regexp=url_check_pattern)
 @verify_access()
 def handle_message(message):
         url = message.text
