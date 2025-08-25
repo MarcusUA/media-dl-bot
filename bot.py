@@ -2,6 +2,7 @@ import os
 import glob
 import yt_dlp
 import telebot
+# import json
 from telebot.types import BotCommand, InputMediaVideo
 from functools import wraps
 from dotenv import load_dotenv
@@ -14,6 +15,7 @@ BOT_TOKEN = os.environ.get('BOT_TOKEN')
 print (f"BOT_TOKEN: {BOT_TOKEN}")
 USERS = os.environ.get('USERS')
 if USERS:
+    print (f"USERS: {USERS}")
     ALLOWED_USERS=USERS.split(",")
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER')
 if UPLOAD_FOLDER:
@@ -27,27 +29,31 @@ if not FILENANE_TMPL:
 NO_UPLOAD = os.environ.get('NO_UPLOAD')
 URL_EXCEPTIONS = os.environ.get('URL_EXCEPTIONS')
 if not URL_EXCEPTIONS:
-    URL_EXCEPTIONS = 'olx.|mobile.de'
+    URL_EXCEPTIONS = 'olx.|mobile.de|maps.'
 
-url_check_pattern = f"\Ahttps://(?!.*({URL_EXCEPTIONS}))"
+url_check_pattern = f"\\Ahttps://(?!.*({URL_EXCEPTIONS}))"
 
 # functions
 
-def is_allowed_username(username):
-    if not USERS:
+def is_allowed_user(user):
+    # if no allowed users specified, allow everyone.
+    if len(ALLOWED_USERS)==0:
          return True
-    return username in ALLOWED_USERS
+    return user in ALLOWED_USERS
 
 def verify_access():
     def handler_restict(f):
         @wraps(f)
         def f_restrict(message, *args, **kwargs):
             username=message.from_user.username
-            if is_allowed_username(username):
+            userid=message.from_user.id
+            if is_allowed_user(str(userid)):
+                return f(message, *args, **kwargs)
+            elif is_allowed_user(username):
                 return f(message, *args, **kwargs)
             else:
-                print (f"Unknown user: {username}")
-                bot.reply_to(message, f"Unregistered username: {username}")
+                print (f"Unknown username: {username} id: {userid}")
+                bot.reply_to(message, f"Unregistered username: {username} id: {userid}")
         return f_restrict
     return handler_restict
 
